@@ -1,0 +1,301 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "Cloud-Corner-VNET",
+      "metadata": {
+        "description": "Cloud Corner VNET"
+      }
+    },
+      "vnetAddressPrefix": {
+        "type": "string",
+        "defaultValue": "10.0.0.0/24",
+        "metadata": {
+          "description": "Address prefix"
+        }
+      },
+      "subnet1Prefix": {
+        "type": "string",
+        "defaultValue": "10.0.0.0/27",
+        "metadata": {
+          "description": "Subnet 1 Prefix"
+        }
+      },
+      "subnet1Name": {
+        "type": "string",
+        "defaultValue": "Subnet1",
+        "metadata": {
+          "description": "Subnet 1 Name"
+        }
+      },
+      "subnet2Prefix": {
+        "type": "string",
+        "defaultValue": "10.0.0.32/27",
+        "metadata": {
+          "description": "Subnet 2 Prefix"
+        }
+      },
+      "subnet2Name": {
+        "type": "string",
+        "defaultValue": "Subnet2",
+        "metadata": {
+          "description": "Subnet 2 Name"
+        }
+      },
+      "location": {
+        "type": "string",
+        "defaultValue": "[resourceGroup().location]",
+        "metadata": {
+          "description": "Location for all resources."
+        }
+      },
+      "networkSecurityGroup01Name": {
+        "type": "string",
+        "defaultValue": "Cloud-Corner-NSG-01",
+        "metadata": {
+          "description": "This is the name of the network security group"
+        }
+      },
+      "RouteTable01Name": {
+        "type": "string",
+        "defaultValue": "Cloud-Corner-UDR-01",
+        "metadata": {
+        "description": "Route Table 01 Name."
+      }
+      },
+      "Route01Name": {
+        "type": "string",
+        "defaultValue": "To-internet",
+        "metadata": {
+          "description": "Route 01 Name."
+        }
+      },
+      "Route01NextHopType": {
+        "type": "string",
+        "allowedValues": [
+        "VirtualNetworkGateway",
+        "VnetLocal",
+        "Internet",
+        "VirtualAppliance",
+        "None"
+      ],
+      "defaultValue": "VirtualAppliance",
+        "metadata": {
+          "description": "Route 01 Next Hop Type."
+        }
+      },
+      "Route01AddressPrefix": {
+        "type": "string",
+        "defaultValue": "0.0.0.0/0",
+        "metadata": {
+          "description": "Route 01 Address Prefix."
+        }
+      },
+          "RT01Route01NextHopIPAddress": {
+        "type": "string",
+        "defaultValue": "10.0.0.40",
+        "metadata": {
+          "description": "Next Hop IP Addess."
+        }
+      },
+      "RouteTable02Name": {
+        "type": "string",
+        "defaultValue": "Cloud-Corner-UDR-02",
+        "metadata": {
+          "description": "Route Table 02 Name."
+        }
+      },
+      "RT02Route01Name": {
+        "type": "string",
+        "defaultValue": "Local-Subnet",
+        "metadata": {
+        "description": "Route Table 02 Route 01 Name."
+        }
+      },
+      "RT02Route01NextHopType": {
+        "type": "string",
+        "allowedValues": [
+        "VirtualNetworkGateway",
+        "VnetLocal",
+        "Internet",
+        "VirtualAppliance",
+        "None"
+      ],
+      "defaultValue": "VnetLocal",
+        "metadata": {
+          "description": "Route 02 Next Hop Type."
+        }
+      },
+      "RT02Route01AddressPrefix": {
+        "type": "string",
+        "defaultValue": "10.0.0.0/27",
+        "metadata": {
+          "description": "Route Table 02 Route 01 Address Prefix."
+        }
+      },
+        "RT02Route02Name": {
+          "type": "string",
+          "defaultValue": "To-subnet-1",
+          "metadata": {
+            "description": "Route Table 02 Route 01 Name."
+          }
+        },
+        "RT02Route02NextHopType": {
+          "type": "string",
+          "allowedValues": [
+          "VirtualNetworkGateway",
+          "VnetLocal",
+          "Internet",
+          "VirtualAppliance",
+          "None"
+        ],
+        "defaultValue": "VirtualAppliance",
+          "metadata": {
+            "description": "Route 02 Next Hop Type."
+          }
+        },
+        "RT02Route02AddressPrefix": {
+          "type": "string",
+          "defaultValue": "10.0.0.32/27",
+          "metadata": {
+            "description": "Route Table 02 Route 01 Address Prefix."
+          }
+      },
+        "RT02Route02NextHopIPAddress": {
+          "type": "string",
+          "defaultValue": "10.0.0.40",
+          "metadata": {
+            "description": "Next Hop IP Addess."
+          }
+        }
+    },
+  "variables": {},
+  "resources": [
+    {
+    "apiVersion": "2017-10-01",
+    "type": "Microsoft.Network/routeTables",
+    "name": "[parameters('RouteTable01Name')]",
+    "location": "[resourceGroup().location]",
+    "properties": {
+    "disableBgpRoutePropagation": true,
+    "routes": [
+      {
+        "name": "[parameters('Route01Name')]",
+        "properties": {
+          "addressPrefix": "[parameters('Route01AddressPrefix')]",
+          "nextHopType": "[parameters('Route01NextHopType')]",
+          "nextHopIpAddress": "[parameters('RT01Route01NextHopIPAddress')]"
+          }
+        }
+      ]
+    }
+  },
+    {
+    "apiVersion": "2017-10-01",
+    "type": "Microsoft.Network/routeTables",
+    "name": "[parameters('RouteTable02Name')]",
+    "location": "[resourceGroup().location]",
+    "properties": {
+    "disableBgpRoutePropagation": true,
+    "routes": [
+      {
+        "name": "[parameters('RT02Route01Name')]",
+        "properties": {
+          "addressPrefix": "[parameters('RT02Route01AddressPrefix')]",
+          "nextHopType": "[parameters('RT02Route01NextHopType')]"
+        }
+      },
+          {
+        "name": "[parameters('RT02Route02Name')]",
+        "properties": {
+          "addressPrefix": "[parameters('RT02Route02AddressPrefix')]",
+          "nextHopType": "[parameters('RT02Route02NextHopType')]",
+          "nextHopIpAddress": "[parameters('RT02Route02NextHopIPAddress')]"
+          }
+        }
+      ]
+    }
+  },
+    {
+    "apiVersion": "2019-02-01",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "name": "[parameters('networkSecurityGroup01Name')]",
+    "location": "[parameters('location')]",
+    "properties": {
+      "securityRules": [
+        {
+          "name": "HTTPS",
+          "properties": {
+            "description": "Open HTTPS to Public",
+            "protocol": "Tcp",
+            "sourcePortRange": "443",
+            "destinationPortRange": "443",
+            "sourceAddressPrefix": "*",
+            "destinationAddressPrefix": "*",
+            "access": "Allow",
+            "priority": 101,
+            "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2018-10-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('vnetName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[parameters('networkSecurityGroup01Name')]"
+      ],
+      "properties": {
+        "AddressSpace": {
+          "AddressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        }
+      },
+      "resources": [
+        {
+        "apiVersion": "2018-10-01",
+        "type": "subnets",
+        "location": "[parameters('location')]",
+        "name": "[parameters('subnet1Name')]",
+        "dependsOn": [
+          "[parameters('vnetName')]",
+          "[resourceId('Microsoft.Network/routeTables', parameters('RouteTable01Name'))]"
+        ],
+        "properties": {
+        "AddressPrefix": "[parameters('subnet1Prefix')]",
+        "networkSecurityGroup": {
+        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroup01Name'))]"},
+        "routeTable": {
+	      "id": "[resourceId('Microsoft.Network/routeTables', parameters('RouteTable01Name'))]"
+	        }
+         }
+        },
+        {
+        "apiVersion": "2018-10-01",
+        "type": "subnets",
+        "location": "[parameters('location')]",
+        "name": "[parameters('subnet2Name')]",
+        "dependsOn": [
+          "[parameters('vnetName')]",
+          "[parameters('subnet1Name')]",
+          "[parameters('RouteTable02Name')]"
+        ],
+        "properties": {
+          "AddressPrefix": "[parameters('subnet2Prefix')]",
+          "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroup01Name'))]"},
+          "routeTable": {
+          "id": "[resourceId('Microsoft.Network/routeTables', parameters('RouteTable02Name'))]"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
