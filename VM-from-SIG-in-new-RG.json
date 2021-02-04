@@ -1,0 +1,243 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "galleryimageversion": {
+            "type": "string",
+            "defaultValue": "10.0.2"
+        },
+        "envname": {
+            "type": "string",
+            "defaultValue": "test"
+        }
+    },
+    "variables": {
+        "basename": "[concat(parameters('envname'),substring(deployment().name,0,6))]",
+        "rgname": "[concat('rg-', substring(variables('basename'), 0, 10))]",
+        "region": "francecentral"
+    },
+    "resources": [
+        {
+            "name": "[variables('rgname')]",
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2019-10-01",
+            "location": "[variables('region')]",
+            "dependsOn": [
+            ],
+            "tags": {
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('rgname')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/resourceGroups',variables('rgname'))]"
+            ],
+            "apiVersion": "2019-10-01",
+            "name": "nestedTemplate1",
+            "properties": {
+                "expressionEvaluationOptions": {
+                    "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                    "galleryImageVersionName": {
+                        "value": "[parameters('galleryimageversion')]"
+                    },
+                    "envname": {
+                        "value": "[parameters('envname')]"
+                    }
+
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "galleryImageVersionName": {
+                            "type": "string"
+                        },
+                        "envname": {
+                            "type": "string"
+                        }
+                    },
+                    "variables": {
+                        "basename": "[concat(parameters('envname'),substring(deployment().name,0,6))]",
+                        "pubipname": "[concat( 'pip-',variables('basename'))]",
+                        "pubipdns": "[concat( 'vm-',variables('basename'))]",
+                        "region": "francecentral",
+                        "adminUsername": "uiadmin",
+                        "adminPassword": "ThisIs1Password!",
+                        "galleryName": "demosig",
+                        "galleryImageDefinitionName": "demoid",
+                        "nicName": "[concat( 'nic-',variables('basename'))]",
+                        "addressPrefix": "10.0.0.0/24",
+                        "subnetName": "[concat( 'sub-',variables('basename'))]",
+                        "subnetPrefix": "10.0.0.0/24",
+                        "vmName": "[concat( 'vm-',variables('basename'))]",
+                        "virtualNetworkName": "[concat( 'vnet-',variables('basename'))]",
+                        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+                        "networkSecurityGroupName": "[concat( 'nsg-',variables('basename'))]"
+                    },
+                    "resources": [
+                        {
+                            "name": "[variables('pubipname')]",
+                            "type": "Microsoft.Network/publicIPAddresses",
+                            "apiVersion": "2019-11-01",
+                            "location": "[variables('region')]",
+                            "tags": {
+                                "displayName": "publicIPAddress1"
+                            },
+                            "properties": {
+                                "publicIPAllocationMethod": "Static",
+                                "dnsSettings": {
+                                    "domainNameLabel": "[variables('pubipdns')]"
+                                }
+                            }
+                        },
+                        {
+                            "comments": "Simple Network Security Group for subnet [variables('subnetName')]",
+                            "type": "Microsoft.Network/networkSecurityGroups",
+                            "apiVersion": "2019-08-01",
+                            "name": "[variables('networkSecurityGroupName')]",
+                            "location": "[variables('region')]",
+                            "properties": {
+                                "securityRules": [
+                                    {
+                                        "name": "default-allow-22",
+                                        "properties": {
+                                            "priority": 1000,
+                                            "access": "Allow",
+                                            "direction": "Inbound",
+                                            "destinationPortRange": "22",
+                                            "protocol": "Tcp",
+                                            "sourceAddressPrefix": "*",
+                                            "sourcePortRange": "*",
+                                            "destinationAddressPrefix": "*"
+                                        }
+                                    },
+                                    {
+                                        "name": "default-allow-3389",
+                                        "properties": {
+                                            "priority": 1001,
+                                            "access": "Allow",
+                                            "direction": "Inbound",
+                                            "destinationPortRange": "3389",
+                                            "protocol": "Tcp",
+                                            "sourceAddressPrefix": "*",
+                                            "sourcePortRange": "*",
+                                            "destinationAddressPrefix": "*"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Network/virtualNetworks",
+                            "name": "[variables('virtualNetworkName')]",
+                            "apiVersion": "2016-03-30",
+                            "location": "[variables('region')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                            ],
+                            "properties": {
+                                "addressSpace": {
+                                    "addressPrefixes": [
+                                        "[variables('addressPrefix')]"
+                                    ]
+                                },
+                                "subnets": [
+                                    {
+                                        "name": "[variables('subnetName')]",
+                                        "properties": {
+                                            "addressPrefix": "[variables('subnetPrefix')]",
+                                            "networkSecurityGroup": {
+                                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Network/networkInterfaces",
+                            "name": "[variables('nicName')]",
+                            "apiVersion": "2016-03-30",
+                            "location": "[variables('region')]",
+                            "properties": {
+                                "ipConfigurations": [
+                                    {
+                                        "name": "ipconfig1",
+                                        "properties": {
+                                            "privateIPAllocationMethod": "Dynamic",
+                                            "publicIPAddress": {
+                                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('pubipname'))]"
+                                            },
+                                            "subnet": {
+                                                "id": "[variables('subnetRef')]"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Network/publicIPAddresses/', variables('pubipname'))]",
+                                "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+                            ]
+                        },
+                        {
+                            "type": "Microsoft.Compute/virtualMachines",
+                            "name": "[variables('vmName')]",
+                            "apiVersion": "2019-07-01",
+                            "location": "[variables('region')]",
+                            "properties": {
+                                "hardwareProfile": {
+                                    "vmSize": "Standard_F8s_v2"
+                                },
+                                "osProfile": {
+                                    "computerName": "[variables('vmName')]",
+                                    "adminUsername": "[variables('adminUsername')]",
+                                    "adminPassword": "[variables('adminPassword')]"
+                                },
+                                "storageProfile": {
+                                    "imageReference": {
+                                        "id": "[resourceId('Microsoft.Compute/galleries/images/versions', variables('galleryName'), variables('galleryImageDefinitionName'), parameters('galleryImageVersionName'))]"
+                                    }
+                                },
+                                "networkProfile": {
+                                    "networkInterfaces": [
+                                        {
+                                            "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+                                        }
+                                    ]
+                                }
+                            },
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+                            ]
+                        }
+                    ],
+                    "outputs": {
+                        "publicipn": {
+                            "type": "string",
+                            "value": "[reference(variables('pubipname')).dnsSettings.fqdn]"
+                        },
+                        "publicipa": {
+                            "type": "string",
+                            "value": "[reference(variables('pubipname')).ipAddress]"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "hostname": {
+            "type": "string",
+            "value": "[reference('nestedTemplate1').outputs.publicipn.value]"
+        },
+        "ipaddress": {
+            "type": "string",
+            "value": "[reference('nestedTemplate1').outputs.publicipa.value]"
+        }
+    }
+}
